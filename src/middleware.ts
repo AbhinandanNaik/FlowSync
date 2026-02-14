@@ -1,0 +1,60 @@
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+// Step A: The Architectural Intent
+// This middleware runs on every request. Its primary job is to REFRESH the Auth Session.
+// If a user's token is expired, Supabase (via `getUser`) will attempt to use the Refresh Token.
+// Since Server Components cannot set cookies, the Middleware must do it.
+
+export async function middleware(request: NextRequest) {
+    let response = NextResponse.next({
+        request: {
+            headers: request.headers,
+        },
+    })
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll()
+                },
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        request.cookies.set(name, value)
+                    )
+                    response = NextResponse.next({
+                        request,
+                    })
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        response.cookies.set(name, value, options)
+                    )
+                },
+            },
+        }
+    )
+
+    // Step B: Code Breakdown (Middleware Specifics)
+    // - `getUser()`: Checks if the user is logged in. This triggers the cookie refresh if needed.
+    // - `response.cookies.set`: Writes the refreshed token back to the browser.
+
+    await supabase.auth.getUser()
+
+    return response
+}
+
+export const config = {
+    matcher: [
+        /*
+         * Match all request paths except:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
+         * Feel free to modify this pattern to include more paths.
+         */
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
+}
