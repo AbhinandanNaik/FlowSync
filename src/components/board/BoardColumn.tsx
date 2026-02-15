@@ -77,7 +77,7 @@ export function BoardColumn({ column, tasks }: BoardColumnProps) {
             </div>
 
             <div className="p-3">
-                <NewTaskDialog columnId={column.id} />
+                <NewTaskDialog columnId={String(column.id)} />
             </div>
         </div>
     );

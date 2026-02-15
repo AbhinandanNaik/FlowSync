@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LayoutDashboard, KanbanSquare, Settings, BarChart } from 'lucide-react'
+import { WorkspaceSwitcher } from './workspace/WorkspaceSwitcher'
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,6 +13,9 @@ export function Sidebar() {
     return (
         <aside className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 hidden md:block min-h-screen">
             <div className="p-6">
+                <div className="mb-6">
+                    <WorkspaceSwitcher />
+                </div>
                 <nav className="space-y-2">
                     {navItems.map((item) => (
                         <Link

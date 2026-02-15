@@ -3,6 +3,7 @@ export type UniqueId = string | number;
 export interface Board {
   id: UniqueId;
   title: string;
+  workspace_id?: UniqueId | null; // Added workspace support
 }
 
 export interface Column {
@@ -16,7 +17,7 @@ export interface Task {
   id: UniqueId;
   columnId: UniqueId;
   content: string;
-  description?: string; // New field for rich text
+  description?: string;
   order: number;
 }
 

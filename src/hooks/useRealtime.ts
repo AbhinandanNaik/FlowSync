@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 export function useRealtime(boardId: string) {
     const supabase = createClient()
     const router = useRouter()
-    const { addColumn, addTask, updateTaskPosition, updateColumnOrder } = useBoardStore()
+    // const { addColumn, addTask } = useBoardStore() // Not used currently
 
     useEffect(() => {
         const channel = supabase

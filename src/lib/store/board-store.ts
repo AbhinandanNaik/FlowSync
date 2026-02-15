@@ -46,6 +46,20 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
         try {
             const newTask = await api.createTask(columnId, content, order);
             set((state) => ({ tasks: [...state.tasks, newTask] }));
+
+            // Log Activity
+            const column = get().columns.find(c => c.id === columnId);
+            if (column) {
+                const board = get().boards.find(b => b.id === column.boardId);
+                if (board?.workspace_id) {
+                    api.logActivity(String(board.workspace_id), 'create_task', 'task', String(newTask.id), {
+                        taskContent: content,
+                        boardId: board.id,
+                        boardTitle: board.title
+                    });
+                }
+            }
+
         } catch (error) {
             console.error("Failed to create task:", error);
         }
@@ -65,17 +79,33 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     },
 
     deleteTask: async (taskId) => {
+        const task = get().tasks.find(t => t.id === taskId);
         set((state) => ({
             tasks: state.tasks.filter(t => t.id !== taskId)
         }));
         try {
             await api.deleteTask(taskId);
+
+            // Log Activity
+            if (task) {
+                const column = get().columns.find(c => c.id === task.columnId);
+                if (column) {
+                    const board = get().boards.find(b => b.id === column.boardId);
+                    if (board?.workspace_id) {
+                        api.logActivity(String(board.workspace_id), 'delete_task', 'task', String(taskId), {
+                            taskContent: task.content,
+                            boardId: board.id
+                        });
+                    }
+                }
+            }
         } catch (error) {
             console.error("Failed to delete task:", error);
         }
     },
 
     moveTask: async (taskId, newColumnId, newOrder) => {
+        const previousTask = get().tasks.find(t => t.id === taskId);
         set((state) => {
             const taskIndex = state.tasks.findIndex((t) => t.id === taskId);
             if (taskIndex === -1) return state;
@@ -91,6 +121,23 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 
         try {
             await api.updateTaskPosition(taskId, newColumnId, newOrder);
+
+            // Log if column changed
+            if (previousTask && previousTask.columnId !== newColumnId) {
+                const column = get().columns.find(c => c.id === newColumnId);
+                const oldColumn = get().columns.find(c => c.id === previousTask.columnId); // find old column
+                if (column && oldColumn) {
+                    const board = get().boards.find(b => b.id === column.boardId);
+                    if (board?.workspace_id) {
+                        api.logActivity(String(board.workspace_id), 'move_task', 'task', String(taskId), {
+                            taskContent: previousTask.content,
+                            fromColumn: oldColumn.title,
+                            toColumn: column.title,
+                            boardId: board.id
+                        });
+                    }
+                }
+            }
         } catch (error) {
             console.error('Failed to persist task move:', error);
         }

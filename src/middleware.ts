@@ -40,7 +40,17 @@ export async function middleware(request: NextRequest) {
     // - `getUser()`: Checks if the user is logged in. This triggers the cookie refresh if needed.
     // - `response.cookies.set`: Writes the refreshed token back to the browser.
 
-    await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Protect Dashboard Routes
+    if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
+        return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    // Redirect Logged-In Users away from Auth pages
+    if ((request.nextUrl.pathname.startsWith('/login')) && user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
     return response
 }

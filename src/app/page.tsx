@@ -18,8 +18,11 @@ export default async function Home() {
             {user ? (
               <div className="flex items-center gap-4">
                 <span className="text-sm">Logged in as {user.email}</span>
+                <Link href="/dashboard" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors">
+                  Go to Dashboard
+                </Link>
                 <form action={logout}>
-                  <button className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                  <button className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm">
                     Sign Out
                   </button>
                 </form>
@@ -76,6 +79,6 @@ export default async function Home() {
           </p>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
