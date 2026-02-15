@@ -7,6 +7,9 @@ Built with **Next.js 14**, **Supabase**, and **Tailwind CSS**.
 ![FlowSync Screenshot](https://placehold.co/1200x600/1e293b/ffffff?text=FlowSync+Dashboard) 
 *(Replace with actual screenshot)*
 
+## 🌐 Live Demo
+Check out the live deployment here: [FlowSync on Vercel](https://flow-sync-ejbund0wi-abhinandan-naiks-projects-0d88e3b7.vercel.app/)
+
 ## 🚀 Key Features
 
 *   🔐 **Secure Authentication**: Robust email/password login and signup flow powered by Supabase Auth with PKCE and Middleware protection.
