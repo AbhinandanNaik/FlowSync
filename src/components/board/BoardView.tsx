@@ -17,13 +17,35 @@ import {
 import { SortableContext, arrayMove } from '@dnd-kit/sortable';
 import { BoardColumn } from './BoardColumn';
 import { TaskCard } from './TaskCard';
+import { FilterBar } from './FilterBar';
+import { ViewSwitcher } from './ViewSwitcher';
+import { TimelineView } from './TimelineView';
 import { useBoardStore } from '@/lib/store/board-store';
 import { Column, Task } from '@/types/board';
+import { isPast } from 'date-fns';
 
-export function BoardView() {
-    const { columns, tasks, setColumns, moveTask } = useBoardStore();
+interface BoardViewProps {
+    boardId?: string;
+    members?: any[];
+}
+
+export function BoardView({ boardId, members = [] }: BoardViewProps) {
+    const { columns, tasks, setColumns, moveTask, filters, viewMode } = useBoardStore();
 
     const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
+
+    // Apply filters to tasks
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(task => {
+            if (filters.priority && task.priority !== filters.priority) return false;
+            if (filters.assigneeId && task.assignee_id !== filters.assigneeId) return false;
+            if (filters.overdue) {
+                if (!task.due_date || !isPast(new Date(task.due_date))) return false;
+            }
+            // Label filter requires task_labels data — skipped for now (handled when label data is loaded)
+            return true;
+        });
+    }, [tasks, filters]);
 
     const [activeColumn, setActiveColumn] = useState<Column | null>(null);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -31,7 +53,7 @@ export function BoardView() {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 3, // 3px distance before drag starts
+                distance: 3,
             },
         })
     );
@@ -60,10 +82,8 @@ export function BoardView() {
 
         if (activeId === overId) return;
 
-        // Handling Column Reordering
         const isActiveColumn = active.data.current?.type === 'Column';
         if (isActiveColumn) {
-            // In a real app we'd reuse reorderBoard function (not implemented in store yet)
             const oldIndex = columns.findIndex((col) => col.id === activeId);
             const newIndex = columns.findIndex((col) => col.id === overId);
             setColumns(arrayMove(columns, oldIndex, newIndex));
@@ -84,24 +104,17 @@ export function BoardView() {
 
         if (!isActiveTask) return;
 
-        // Dropping a Task over another Task
         if (isActiveTask && isOverTask) {
             const activeTask = tasks.find(t => t.id === activeId);
-            const overTask = tasks.find(t => t.id === overId); // Task we are hovering over
+            const overTask = tasks.find(t => t.id === overId);
 
             if (activeTask && overTask) {
                 if (activeTask.columnId !== overTask.columnId) {
-                    // Moving to a different column
-                    // Visual update only handled by dnd-kit for now unless we update state here
-                    // We'll update state on DragEnd for simplicity or implement advanced smooth reordering
                     moveTask(activeId, overTask.columnId, overTask.order);
-                } else {
-                    // Same column reordering (would use arrayMove logic on tasks in store)
                 }
             }
         }
 
-        // Dropping a Task over a Column
         const isOverColumn = over.data.current?.type === 'Column';
         if (isActiveTask && isOverColumn) {
             const activeTask = tasks.find(t => t.id === activeId);
@@ -124,36 +137,51 @@ export function BoardView() {
     };
 
     return (
-        <DndContext
-            sensors={sensors}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            onDragOver={onDragOver}
-        >
-            <div className="flex gap-4 overflow-x-auto pb-4 h-full min-h-[500px]">
-                <SortableContext items={columnsId}>
-                    {columns.map((col) => (
-                        <BoardColumn
-                            key={col.id}
-                            column={col}
-                            tasks={tasks.filter((task) => task.columnId === col.id)}
-                        />
-                    ))}
-                </SortableContext>
-            </div>
-
-            {createPortal(
-                <DragOverlay dropAnimation={dropAnimation}>
-                    {activeColumn && (
-                        <BoardColumn
-                            column={activeColumn}
-                            tasks={tasks.filter((task) => task.columnId === activeColumn.id)}
-                        />
-                    )}
-                    {activeTask && <TaskCard task={activeTask} />}
-                </DragOverlay>,
-                document.body
+        <div>
+            {boardId && (
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <FilterBar boardId={boardId} members={members} />
+                    <ViewSwitcher />
+                </div>
             )}
-        </DndContext>
+
+            {viewMode === 'timeline' ? (
+                <TimelineView />
+            ) : (
+
+                <DndContext
+                    sensors={sensors}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    onDragOver={onDragOver}
+                >
+                    <div className="flex gap-4 overflow-x-auto pb-4 h-full min-h-[500px]">
+                        <SortableContext items={columnsId}>
+                            {columns.map((col) => (
+                                <BoardColumn
+                                    key={col.id}
+                                    column={col}
+                                    tasks={filteredTasks.filter((task) => task.columnId === col.id)}
+                                />
+                            ))}
+                        </SortableContext>
+                    </div>
+
+                    {createPortal(
+                        <DragOverlay dropAnimation={dropAnimation}>
+                            {activeColumn && (
+                                <BoardColumn
+                                    column={activeColumn}
+                                    tasks={filteredTasks.filter((task) => task.columnId === activeColumn.id)}
+                                />
+                            )}
+                            {activeTask && <TaskCard task={activeTask} />}
+                        </DragOverlay>,
+                        document.body
+                    )}
+                </DndContext>
+            )}
+        </div>
     );
 }
+

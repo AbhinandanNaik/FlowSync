@@ -1,6 +1,13 @@
 import { create } from 'zustand';
-import { Board, Column, Task, UniqueId } from '@/types/board';
+import { Board, Column, Task, UniqueId, Priority } from '@/types/board';
 import { api } from '@/lib/api';
+
+export interface BoardFilters {
+    priority: Priority | null;
+    labelId: string | null;
+    assigneeId: string | null;
+    overdue: boolean;
+}
 
 interface BoardStore {
     boards: Board[];
@@ -19,12 +26,23 @@ interface BoardStore {
 
     moveTask: (taskId: UniqueId, newColumnId: UniqueId, newOrder: number) => void;
     moveColumn: (columnId: UniqueId, newOrder: number) => void;
+
+    // Filters
+    filters: BoardFilters;
+    setFilters: (filters: BoardFilters) => void;
+    clearFilters: () => void;
+
+    // View mode
+    viewMode: 'kanban' | 'timeline';
+    setViewMode: (mode: 'kanban' | 'timeline') => void;
 }
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
     boards: [],
     columns: [],
     tasks: [],
+    filters: { priority: null, labelId: null, assigneeId: null, overdue: false },
+    viewMode: 'kanban' as const,
 
     setBoards: (boards) => set({ boards }),
     setColumns: (columns) => set({ columns }),
@@ -71,7 +89,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
             tasks: state.tasks.map(t => t.id === taskId ? { ...t, content, description } : t)
         }));
         try {
-            await api.updateTask(taskId, content, description);
+            await api.updateTask(taskId, { content, description });
         } catch (error) {
             console.error("Failed to update task:", error);
             // Revert logic would go here
@@ -149,5 +167,9 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
         } catch (error) {
             console.error('Failed to persist column move:', error);
         }
-    }
+    },
+
+    setFilters: (filters) => set({ filters }),
+    clearFilters: () => set({ filters: { priority: null, labelId: null, assigneeId: null, overdue: false } }),
+    setViewMode: (viewMode) => set({ viewMode }),
 }));

@@ -1,16 +1,30 @@
 'use client'
 
-import { LucideIcon } from 'lucide-react'
+import {
+    CheckSquare, Layout, Activity, Clock, AlertTriangle, Users,
+    LucideIcon
+} from 'lucide-react'
+
+const iconMap: Record<string, LucideIcon> = {
+    CheckSquare,
+    Layout,
+    Activity,
+    Clock,
+    AlertTriangle,
+    Users,
+}
 
 interface KPICardProps {
     title: string
     value: string | number
-    icon: LucideIcon
+    iconName: string
     description?: string
     trend?: string
 }
 
-export function KPICard({ title, value, icon: Icon, description, trend }: KPICardProps) {
+export function KPICard({ title, value, iconName, description, trend }: KPICardProps) {
+    const Icon = iconMap[iconName] || CheckSquare
+
     return (
         <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between">

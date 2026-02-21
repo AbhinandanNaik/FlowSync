@@ -57,7 +57,7 @@ export default async function BoardPage({ params }: { params: { id: string } }) 
             </div>
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden">
-                <BoardView />
+                <BoardView boardId={board?.id ? String(board.id) : ''} />
             </div>
         </div>
     )
